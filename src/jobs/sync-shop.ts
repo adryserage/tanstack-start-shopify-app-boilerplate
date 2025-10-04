@@ -25,11 +25,10 @@ const worker = new Worker(
       .set({
         name: shopData.data?.shop?.name,
         email: shopData.data?.shop?.email,
-        contactEmail: shopData.data?.shop?.contactEmail,
-        currencyCode: shopData.data?.shop?.currencyCode,
-        weightUnit: shopData.data?.shop?.weightUnit,
         timezone: shopData.data?.shop?.ianaTimezone,
-        url: shopData.data?.shop?.url,
+        currency: shopData.data?.shop?.currencyCode,
+        plan: shopData.data?.shop?.plan.publicDisplayName,
+        domain: shopData.data?.shop?.myshopifyDomain,
       })
       .where(eq(shops.id, job.data.shop.id))
   },

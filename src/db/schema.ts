@@ -10,13 +10,13 @@ import {
 export const sessions = pgTable(
   'session',
   {
-    id: text().primaryKey(),
-    shop: text().notNull().unique(),
-    state: text().notNull(),
-    isOnline: boolean().default(false).notNull(),
-    scope: text(),
-    expires: timestamp({ mode: 'date' }),
-    accessToken: text(),
+    id: text('id').primaryKey(),
+    shop: text('shop').notNull().unique(),
+    state: text('state').notNull(),
+    isOnline: boolean('isOnline').default(false).notNull(),
+    scope: text('scope'),
+    expires: timestamp('expires', { mode: 'date' }),
+    accessToken: text('accessToken'),
   },
   table => [
     index('session_id_idx').on(table.id),
@@ -27,22 +27,20 @@ export const sessions = pgTable(
 export const shops = pgTable(
   'shop',
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: uuid().notNull().primaryKey().defaultRandom(),
     domain: text().notNull().unique(),
     name: text(),
     email: text(),
-    contactEmail: text(),
-    currencyCode: text(),
-    weightUnit: text(),
     timezone: text(),
-    url: text(),
+    currency: text(),
+    plan: text(),
 
     createdAt: timestamp({ mode: 'string' }).defaultNow(),
     updatedAt: timestamp({ mode: 'string' }).defaultNow(),
   },
   table => [
-    index('shop_id_idx').on(table.id),
     index('shop_domain_idx').on(table.domain),
+    index('shop_created_at_idx').on(table.createdAt),
   ]
 )
 

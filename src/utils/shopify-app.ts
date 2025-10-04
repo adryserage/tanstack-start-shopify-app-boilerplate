@@ -1,7 +1,11 @@
-import '@shopify/shopify-api/adapters/node'
+import { nodeAdapterInitialized } from '@shopify/shopify-api/adapters/node'
 import { shopifyApi, ApiVersion } from '@shopify/shopify-api'
 
-export const apiVersion = ApiVersion.July25
+if (!nodeAdapterInitialized) {
+  throw new Error('Node adapter not initialized')
+}
+
+export const apiVersion = ApiVersion.October25
 
 export const shopifyApp = shopifyApi({
   apiVersion,
@@ -11,7 +15,6 @@ export const shopifyApp = shopifyApi({
   hostName: process.env.SHOPIFY_APP_URL!.split('//')[1],
   isEmbeddedApp: true,
   future: {
-    lineItemBilling: true,
     customerAddressDefaultFix: true,
     unstable_managedPricingSupport: true,
   },

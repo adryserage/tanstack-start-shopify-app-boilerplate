@@ -4,11 +4,12 @@ export const SHOP_QUERY = `#graphql
       id
       name
       email
-      contactEmail
-      currencyCode
       ianaTimezone
-      url
-      weightUnit
+      currencyCode
+      myshopifyDomain
+      plan {
+        publicDisplayName
+      }
     }
   }
 `

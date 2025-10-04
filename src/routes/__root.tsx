@@ -6,7 +6,6 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
-  redirect,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { createServerFn } from '@tanstack/react-start'
@@ -15,13 +14,13 @@ import { NotFound } from '~/components/NotFound'
 import { authMiddleware } from '~/utils/middleware/auth-middleware'
 
 const handleShopifyAuth = createServerFn({ method: 'GET' })
-  .validator((data: string | null) => data)
+  .inputValidator((data: string | null) => data)
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     const { session } = context
 
     if (!session) {
-      throw redirect({ to: '/' })
+      throw new Error('No session found')
     }
 
     return session
@@ -57,7 +56,7 @@ export const Route = createRootRouteWithContext()({
         src: 'https://cdn.shopify.com/shopifycloud/app-bridge.js',
       },
       {
-        src: 'https://cdn.shopify.com/shopifycloud/app-bridge-ui-experimental.js',
+        src: 'https://cdn.shopify.com/shopifycloud/polaris.js',
       },
     ],
   }),

@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { PRODUCT_QUERY } from '~/graphql/queries'
 import { syncShopScheduler, SYNC_SHOP_JOB_NAME } from '~/jobs/sync-shop'
-import { logError } from '~/utils/logger'
 import { authMiddleware } from '~/utils/middleware/auth-middleware'
+import logger from '~/utils/logger'
 
 const homeLoader = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
@@ -16,7 +16,7 @@ const homeLoader = createServerFn({ method: 'GET' })
         authSuccess: true,
       }
     } catch (error) {
-      logError('Failed to fetch data:', error)
+      logger.error('Failed to fetch data:', error)
 
       return {
         shop: null,

@@ -8,8 +8,48 @@ import {
   type SelectSession,
   type SelectShop,
 } from '~/db/schema'
-import { logError } from '~/utils/logger'
 import { createGraphqlClient } from '~/utils/shopify-graphql-client'
+import crypto from 'node:crypto'
+import logger from './logger'
+
+export async function verifyShopifyWebhook(
+  request: Request,
+  withBody?: boolean
+): Promise<{
+  valid: boolean
+  shopDomain: string | null
+  webhookTopic: string | null
+  body?: unknown
+}> {
+  const shopifyHmac = request.headers.get('x-shopify-hmac-sha256')
+
+  if (!shopifyHmac) {
+    return { valid: false, shopDomain: null, webhookTopic: null }
+  }
+
+  const body = await request.text()
+
+  const calculatedHmacDigest = crypto
+    .createHmac('sha256', process.env.SHOPIFY_APP_PROXY_SECRET!)
+    .update(body)
+    .digest('base64')
+
+  const valid = crypto.timingSafeEqual(
+    Buffer.from(calculatedHmacDigest),
+    Buffer.from(shopifyHmac)
+  )
+
+  const shopDomain = request.headers.get('x-shopify-shop-domain')
+  const webhookTopic = request.headers.get('x-shopify-topic')
+
+  const response = { valid, shopDomain, webhookTopic, body: undefined }
+
+  if (withBody) {
+    response.body = JSON.parse(body)
+  }
+
+  return response
+}
 
 /**
  * Verify that the request came from Shopify using HMAC-SHA256 signature
@@ -29,7 +69,7 @@ async function verifyShopifyProxyRequest(request: Request): Promise<boolean> {
   const proxySecret = process.env.SHOPIFY_APP_PROXY_SECRET
 
   if (!proxySecret) {
-    logError('❌ SHOPIFY_APP_PROXY_SECRET not configured')
+    logger.error('❌ SHOPIFY_APP_PROXY_SECRET not configured')
     return false
   }
 

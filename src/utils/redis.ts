@@ -1,5 +1,5 @@
 import Redis from 'ioredis'
-import { logError, logInfo } from '~/utils/logger'
+import logger from '~/utils/logger'
 
 export const redis = new Redis(`${process.env.REDIS_URL!}?family=0`, {
   maxRetriesPerRequest: null,
@@ -7,9 +7,9 @@ export const redis = new Redis(`${process.env.REDIS_URL!}?family=0`, {
 })
 
 redis.on('connect', () => {
-  logInfo('Redis connected')
+  logger.info('Redis connected')
 })
 
 redis.on('error', error => {
-  logError('Redis connection error:', error)
+  logger.error('Redis connection error:', error)
 })

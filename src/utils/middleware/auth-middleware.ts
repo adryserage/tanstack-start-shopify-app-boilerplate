@@ -1,11 +1,7 @@
 import { type AdminApiClient } from '@shopify/admin-api-client'
 import { RequestedTokenType, type Session } from '@shopify/shopify-api'
 import { createMiddleware } from '@tanstack/react-start'
-import {
-  getHeaders,
-  getWebRequest,
-  type HTTPHeaderName,
-} from '@tanstack/react-start/server'
+import { getRequest } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { db } from '~/db'
 import {
@@ -14,8 +10,10 @@ import {
   type SelectSession,
   type SelectShop,
 } from '~/db/schema'
-import { logError } from '~/utils/logger'
-import { shopifyApp } from '~/utils/shopify-app'
+import { SHOP_QUERY } from '~/graphql/queries'
+import { type GetShopQuery } from '~/types/generated/admin.generated'
+import logger from '~/utils/logger'
+import { apiVersion, shopifyApp } from '~/utils/shopify-app'
 import { createGraphqlClient } from '~/utils/shopify-graphql-client'
 
 // Enhanced context type with better type safety
@@ -29,11 +27,12 @@ type AuthContext = {
  * Extracts session token from multiple sources in order of priority
  */
 function extractSessionToken(
-  headers: Partial<Record<HTTPHeaderName, string | undefined>>,
+  headers: Headers,
   searchParams: URLSearchParams
 ): string | null {
   // 1. Authorization header (API calls) - normalized to be capitalized
-  const authHeader = headers.Authorization || headers.authorization
+  const authHeader =
+    headers.get('Authorization') || headers.get('authorization')
 
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.replace('Bearer ', '')
@@ -72,7 +71,10 @@ function createAuthContext(
 /**
  * Gets or creates session and shop in database with proper error handling
  */
-async function upsertSessionAndShop(sessionData: Session): Promise<{
+async function upsertSessionAndShop(
+  shopData: GetShopQuery['shop'],
+  sessionData: Session
+): Promise<{
   session: SelectSession
   shop: SelectShop
 }> {
@@ -105,6 +107,11 @@ async function upsertSessionAndShop(sessionData: Session): Promise<{
       .insert(shops)
       .values({
         domain: sessionData.shop,
+        name: shopData.name,
+        email: shopData.email,
+        timezone: shopData.ianaTimezone,
+        currency: shopData.currencyCode,
+        plan: shopData.plan.publicDisplayName,
       })
       .onConflictDoUpdate({
         target: shops.domain,
@@ -137,12 +144,13 @@ async function upsertSessionAndShop(sessionData: Session): Promise<{
 export const authMiddleware = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
     try {
-      const headers = getHeaders()
-      const request = getWebRequest()
+      const request = getRequest()
+      const headers = request.headers
       const url = new URL(request.url)
       const token = extractSessionToken(headers, url.searchParams)
 
       if (!token) {
+        logger.error('No session token found', { headers, url })
         throw new Error('No session token found')
       }
 
@@ -181,11 +189,28 @@ export const authMiddleware = createMiddleware({ type: 'function' }).server(
         requestedTokenType: RequestedTokenType.OfflineAccessToken,
       })
 
+      const shopData = await fetch(
+        `https://${accessToken.session.shop}/admin/api/${apiVersion}/graphql.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': accessToken.session.accessToken!,
+          },
+          body: JSON.stringify({
+            query: SHOP_QUERY,
+          }),
+        }
+      ).then(res => res.json())
+
       if (!accessToken.session?.shop) {
         throw new Error('Token exchange failed: no shop found')
       }
 
-      const { session, shop } = await upsertSessionAndShop(accessToken.session)
+      const { session, shop } = await upsertSessionAndShop(
+        shopData.data.shop,
+        accessToken.session
+      )
 
       const context = createAuthContext(session, shop)
 
@@ -194,7 +219,7 @@ export const authMiddleware = createMiddleware({ type: 'function' }).server(
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
 
-      logError(errorMessage, error)
+      logger.error(errorMessage, error)
 
       throw error
     }

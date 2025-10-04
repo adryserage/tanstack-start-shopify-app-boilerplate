@@ -76,17 +76,6 @@ function AboutComponent() {
               </s-paragraph>
               <s-paragraph>{loaderData.shop.myshopifyDomain}</s-paragraph>
             </s-box>
-
-            <s-box>
-              <s-paragraph>
-                <s-text>Plan Type:</s-text>
-              </s-paragraph>
-              <s-paragraph>
-                {loaderData.shop.plan?.partnerDevelopment
-                  ? 'Development'
-                  : 'Production'}
-              </s-paragraph>
-            </s-box>
           </s-stack>
         </s-section>
       ) : loaderData.authSuccess ? (
