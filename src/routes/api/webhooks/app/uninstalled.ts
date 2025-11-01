@@ -3,14 +3,15 @@ import { eq } from 'drizzle-orm'
 import { db } from '~/db'
 import { sessions } from '~/db/schema'
 import logger from '~/utils/logger'
-import { verifyShopifyWebhook } from '~/utils/shopify-proxy'
+import { webhookMiddleware } from '~/utils/middleware/proxy-middleware'
 
 export const Route = createFileRoute('/api/webhooks/app/uninstalled')({
   server: {
+    middleware: [webhookMiddleware],
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ context }) => {
         try {
-          const { valid, shopDomain } = await verifyShopifyWebhook(request)
+          const { valid, shopDomain } = context
 
           if (!valid || !shopDomain) {
             logger.error('❌ Invalid uninstall webhook', {

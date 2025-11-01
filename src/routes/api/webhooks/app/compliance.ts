@@ -3,15 +3,15 @@ import { eq } from 'drizzle-orm'
 import { db } from '~/db'
 import { sessions, shops } from '~/db/schema'
 import logger from '~/utils/logger'
-import { verifyShopifyWebhook } from '~/utils/shopify-proxy'
+import { webhookMiddleware } from '~/utils/middleware/proxy-middleware'
 
 export const Route = createFileRoute('/api/webhooks/app/compliance')({
   server: {
+    middleware: [webhookMiddleware],
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ context }) => {
         try {
-          const { valid, shopDomain, webhookTopic } =
-            await verifyShopifyWebhook(request)
+          const { valid, shopDomain, webhookTopic } = context
 
           if (!valid || !shopDomain || !webhookTopic) {
             logger.error('❌ Invalid compliance webhook', {

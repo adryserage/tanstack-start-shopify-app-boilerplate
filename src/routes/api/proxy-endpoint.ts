@@ -1,16 +1,16 @@
 import { json } from '@tanstack/react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { SHOP_QUERY } from '~/graphql/queries'
-import { authenticateProxy } from '~/utils/shopify-proxy'
 import logger from '~/utils/logger'
+import { proxyMiddleware } from '~/utils/middleware/proxy-middleware'
 
 export const Route = createFileRoute('/api/proxy-endpoint')({
   server: {
+    middleware: [proxyMiddleware],
     handlers: {
-      GET: async ({ request }) => {
+      GET: async ({ context }) => {
         try {
-          // Verify proxy request and get shop + GraphQL client
-          const { graphql } = await authenticateProxy(request)
+          const { graphql } = context
 
           const shopResponse = await graphql.request(SHOP_QUERY)
 

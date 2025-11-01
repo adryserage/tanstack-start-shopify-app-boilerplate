@@ -1,17 +1,14 @@
-import { type AdminApiClient } from '@shopify/admin-api-client'
-import { RequestedTokenType, type Session } from '@shopify/shopify-api'
+import { RequestedTokenType } from '@shopify/shopify-api'
 import { createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
+import type { Session } from '@shopify/shopify-api'
+import type { AdminApiClient } from '@shopify/admin-api-client'
+import type { GetShopQuery } from '~/types/generated/admin.generated'
+import type { SelectSession, SelectShop } from '~/db/schema'
+import { sessions, shops } from '~/db/schema'
 import { db } from '~/db'
-import {
-  sessions,
-  shops,
-  type SelectSession,
-  type SelectShop,
-} from '~/db/schema'
 import { SHOP_QUERY } from '~/graphql/queries'
-import { type GetShopQuery } from '~/types/generated/admin.generated'
 import logger from '~/utils/logger'
 import { apiVersion, shopifyApp } from '~/utils/shopify-app'
 import { createGraphqlClient } from '~/utils/shopify-graphql-client'
@@ -78,9 +75,11 @@ async function upsertSessionAndShop(
   session: SelectSession
   shop: SelectShop
 }> {
-  return db.transaction(async tx => {
-    // Upsert session with normalized shop domain
-    await tx
+  const now = new Date().toISOString()
+
+  const result = await db.transaction(async tx => {
+    // Upsert session with normalized shop domain - returns the upserted record
+    const [session] = await tx
       .insert(sessions)
       .values({
         id: sessionData.id,
@@ -101,9 +100,10 @@ async function upsertSessionAndShop(
           shop: sessionData.shop,
         },
       })
+      .returning()
 
-    // Upsert shop - create only if domain doesn't exist
-    await tx
+    // Upsert shop - returns the upserted record
+    const [shop] = await tx
       .insert(shops)
       .values({
         domain: sessionData.shop,
@@ -112,23 +112,20 @@ async function upsertSessionAndShop(
         timezone: shopData.ianaTimezone,
         currency: shopData.currencyCode,
         plan: shopData.plan.publicDisplayName,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: shops.domain,
         set: {
-          updatedAt: new Date().toISOString(),
+          name: shopData.name,
+          email: shopData.email,
+          timezone: shopData.ianaTimezone,
+          currency: shopData.currencyCode,
+          plan: shopData.plan.publicDisplayName,
+          updatedAt: now,
         },
       })
-
-    // Get both records
-    const [session, shop] = await Promise.all([
-      tx.query.sessions.findFirst({
-        where: eq(sessions.id, sessionData.id),
-      }),
-      tx.query.shops.findFirst({
-        where: eq(shops.domain, sessionData.shop),
-      }),
-    ])
+      .returning()
 
     if (!session || !shop) {
       throw new Error('Failed to create/retrieve session or shop')
@@ -136,6 +133,8 @@ async function upsertSessionAndShop(
 
     return { session, shop }
   })
+
+  return result
 }
 
 /**
@@ -154,9 +153,8 @@ export const authMiddleware = createMiddleware({ type: 'function' }).server(
         throw new Error('No session token found')
       }
 
-      const decodedSessionToken = await shopifyApp.session.decodeSessionToken(
-        token
-      )
+      const decodedSessionToken =
+        await shopifyApp.session.decodeSessionToken(token)
 
       if (!decodedSessionToken?.dest) {
         throw new Error('Invalid session token: missing destination')
@@ -166,20 +164,20 @@ export const authMiddleware = createMiddleware({ type: 'function' }).server(
       const currentId = shopifyApp.session.getOfflineId(shopDomain)
 
       if (currentId) {
-        const session = await db.query.sessions.findFirst({
-          where: eq(sessions.id, currentId),
-        })
+        // Fetch session and shop in parallel for better performance
+        const [session, shop] = await Promise.all([
+          db.query.sessions.findFirst({
+            where: eq(sessions.id, currentId),
+          }),
+          db.query.shops.findFirst({
+            where: eq(shops.domain, shopDomain),
+          }),
+        ])
 
-        if (session?.accessToken) {
-          const shop = await db.query.shops.findFirst({
-            where: eq(shops.domain, session.shop),
-          })
+        if (session?.accessToken && shop) {
+          const context = createAuthContext(session, shop)
 
-          if (shop) {
-            const context = createAuthContext(session, shop)
-
-            return next({ context })
-          }
+          return next({ context })
         }
       }
 

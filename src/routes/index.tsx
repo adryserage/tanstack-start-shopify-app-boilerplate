@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { PRODUCT_QUERY } from '~/graphql/queries'
-import { syncShopScheduler, SYNC_SHOP_JOB_NAME } from '~/jobs/sync-shop'
+import { SYNC_SHOP_JOB_NAME, syncShopScheduler } from '~/jobs/sync-shop'
 import { authMiddleware } from '~/utils/middleware/auth-middleware'
 import logger from '~/utils/logger'
 

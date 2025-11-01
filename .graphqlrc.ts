@@ -1,6 +1,6 @@
-import fs from 'fs'
+import fs from 'node:fs'
 import { ApiVersion } from '@shopify/shopify-api'
-import { shopifyApiProject, ApiType } from '@shopify/api-codegen-preset'
+import { ApiType, shopifyApiProject } from '@shopify/api-codegen-preset'
 import type { IGraphQLConfig } from 'graphql-config'
 
 function getConfig() {
@@ -15,7 +15,7 @@ function getConfig() {
     },
   }
 
-  let extensions: string[] = []
+  let extensions: Array<string> = []
 
   try {
     extensions = fs.readdirSync('./extensions')

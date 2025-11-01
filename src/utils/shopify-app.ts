@@ -1,5 +1,5 @@
 import { nodeAdapterInitialized } from '@shopify/shopify-api/adapters/node'
-import { shopifyApi, ApiVersion } from '@shopify/shopify-api'
+import { ApiVersion, shopifyApi } from '@shopify/shopify-api'
 
 if (!nodeAdapterInitialized) {
   throw new Error('Node adapter not initialized')

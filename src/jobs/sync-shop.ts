@@ -1,10 +1,10 @@
-import { redis as connection } from '~/utils/redis'
 import { Queue, Worker } from 'bullmq'
+import { eq } from 'drizzle-orm'
+import { redis as connection } from '~/utils/redis'
 import { SHOP_QUERY } from '~/graphql/queries'
 import { createGraphqlClient } from '~/utils/shopify-graphql-client'
 import { db } from '~/db'
 import { shops } from '~/db/schema'
-import { eq } from 'drizzle-orm'
 
 export const SYNC_SHOP_JOB_NAME = 'sync-shop'
 

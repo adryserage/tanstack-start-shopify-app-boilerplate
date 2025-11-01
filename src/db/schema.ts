@@ -1,10 +1,10 @@
 import {
   boolean,
+  index,
   pgTable,
   text,
   timestamp,
   uuid,
-  index,
 } from 'drizzle-orm/pg-core'
 
 export const sessions = pgTable(

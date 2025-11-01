@@ -8,23 +8,8 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-import { createServerFn } from '@tanstack/react-start'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
 import { NotFound } from '~/components/NotFound'
-import { authMiddleware } from '~/utils/middleware/auth-middleware'
-
-const handleShopifyAuth = createServerFn({ method: 'GET' })
-  .inputValidator((data: string | null) => data)
-  .middleware([authMiddleware])
-  .handler(async ({ context }) => {
-    const { session } = context
-
-    if (!session) {
-      throw new Error('No session found')
-    }
-
-    return session
-  })
 
 export const Route = createRootRouteWithContext()({
   head: () => ({
@@ -32,6 +17,11 @@ export const Route = createRootRouteWithContext()({
       {
         rel: 'preconnect',
         href: 'https://cdn.shopify.com',
+      },
+      {
+        rel: 'preload',
+        href: 'https://cdn.shopify.com/shopifycloud/polaris.js',
+        as: 'script',
       },
     ],
     meta: [
@@ -41,6 +31,11 @@ export const Route = createRootRouteWithContext()({
       {
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
+      },
+      {
+        httpEquiv: 'Content-Security-Policy',
+        content:
+          'frame-ancestors https://*.myshopify.com https://admin.shopify.com;',
       },
       {
         name: 'shopify-debug',
@@ -74,15 +69,6 @@ export const Route = createRootRouteWithContext()({
   ),
   notFoundComponent: () => <NotFound />,
   component: RootComponent,
-  beforeLoad: ({ location }) => {
-    const idToken = new URLSearchParams(location.search).get('id_token')
-
-    if (!idToken) {
-      return null
-    }
-
-    return handleShopifyAuth({ data: idToken })
-  },
 })
 
 function RootComponent() {

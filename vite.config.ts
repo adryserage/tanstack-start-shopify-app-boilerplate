@@ -7,7 +7,7 @@ import { nitroV2Plugin } from '@tanstack/nitro-v2-vite-plugin'
 export default defineConfig({
   server: {
     port: 8080,
-    allowedHosts: true,
+    allowedHosts: ['.trycloudflare.com'],
   },
   plugins: [
     tsConfigPaths({
