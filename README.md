@@ -2,6 +2,10 @@
 
 A modern Shopify app boilerplate built with TanStack Start, and TypeScript.
 
+## 🚀 One Click Deploy to Railway
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/__d3az?referralCode=0at3R0&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 ## 🏗️ Architecture Overview
 
 ### Frontend Stack
