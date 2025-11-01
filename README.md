@@ -1,7 +1,5 @@
 # Shopify App Boilerplate
 
-⚠️ **NOT PRODUCTION READY** - This is a development boilerplate for learning and experimentation purposes.
-
 A modern Shopify app boilerplate built with TanStack Start, and TypeScript.
 
 ## 🏗️ Architecture Overview
@@ -143,13 +141,9 @@ pnpm app:dev
 
 ## 🤝 Contributing
 
-This is a learning project. Feel free to:
+Feel free to:
 
 - Report issues and bugs
 - Suggest improvements
 - Submit pull requests
 - Share your experiences
-
----
-
-**Remember**: This is a development boilerplate, not a production-ready application. Always follow Shopify's best practices and security guidelines when building real applications.
